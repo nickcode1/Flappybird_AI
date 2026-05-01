@@ -12,7 +12,7 @@ GRAVITY = 0.5
 JUMP_STRENGTH = -9
 PIPE_SPEED = 4
 PIPE_WIDTH = 80
-PIPE_GAP = 180
+PIPE_GAP = 120
 PIPE_FREQUENCY = 1500  # ms
 GROUND_HEIGHT = 100
 
@@ -174,5 +174,5 @@ def main():
 
 if __name__ == "__main__":
     main()
-"
-}
+
+
