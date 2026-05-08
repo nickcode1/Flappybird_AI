@@ -113,7 +113,8 @@ def main():
     while running:
         clock.tick(FPS)
         screen.fill(SKY_BLUE)
-
+   
+    ## Action code to be altered
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -158,7 +159,7 @@ def main():
 
         for pipe in pipes:
             pipe.draw()
-            print(pipe.height)
+        
         
         
 
