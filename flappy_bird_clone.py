@@ -3,7 +3,7 @@ import random
 import sys
 
 # ----------------------------
-# Config (easy to modify)
+# Config
 # ----------------------------
 WIDTH = 500
 HEIGHT = 700
@@ -12,7 +12,7 @@ GRAVITY = 0.5
 JUMP_STRENGTH = -9
 PIPE_SPEED = 4
 PIPE_WIDTH = 80
-PIPE_GAP = 120
+PIPE_GAP = 180
 PIPE_FREQUENCY = 1500  # ms
 GROUND_HEIGHT = 100
 
@@ -158,6 +158,9 @@ def main():
 
         for pipe in pipes:
             pipe.draw()
+            print(pipe.height)
+        
+        
 
         draw_ground()
         draw_text(f"Score: {score}", 20, 20)
