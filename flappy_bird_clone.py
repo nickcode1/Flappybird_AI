@@ -1,6 +1,7 @@
 import pygame
 import random
 import sys
+from itertools import product
 
 # ----------------------------
 # Config
@@ -12,7 +13,7 @@ GRAVITY = 0.5
 JUMP_STRENGTH = -9
 PIPE_SPEED = 4
 PIPE_WIDTH = 80
-PIPE_GAP = 180
+PIPE_GAP = 150
 PIPE_FREQUENCY = 1500  # ms
 GROUND_HEIGHT = 100
 
@@ -23,6 +24,9 @@ DARK_GREEN = (0, 120, 0)
 YELLOW = (255, 255, 0)
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
+
+#SIM Specs
+N = 10
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -104,21 +108,96 @@ def draw_text(text, x, y):
 def reset_game():
     return Bird(), [], 0, pygame.time.get_ticks()
 
+def seq_eval(seq,current_y,current_v,pipeheight,pipex):
+    
+    y = current_y
+    v = current_v
+    px = pipex  
 
+    total_cost = 0
+    Qy = 100
+    Qv = 10
+
+    R  = 10000000
+
+    for i in seq:
+
+        px -= PIPE_SPEED   # <-- advance pipe position each step
+
+        # update physics
+        if i == 1:
+            v = JUMP_STRENGTH + GRAVITY
+        else:
+            v += GRAVITY
+
+        y += v
+
+        # position error
+        error = y - (pipeheight + PIPE_GAP/2)
+
+        # stage cost
+        total_cost += (
+            Qy * error**2 +
+            Qv * v**2 +
+            R * i**2
+        )
+
+        # collision penalty
+        if px < 100 and (px+PIPE_WIDTH) >100:
+            
+            if y < pipeheight or y >  (pipeheight + PIPE_GAP):
+                total_cost += 1e100000000
+                break
+
+    return total_cost
+
+
+def simulate(birdy,birdvelo,pipeheight,pipex):
+
+  ypos = birdy
+  velo = birdvelo
+  seqs = list(product([0,1], repeat=N))
+  optimalcost = 100000000000000000000000000
+  
+  for seq in seqs:
+    cost = seq_eval(seq,birdy,birdvelo,pipeheight,pipex)
+        
+    if cost < optimalcost:
+
+        optimalcost = cost
+        optimal_seq = seq
+    
+  return optimal_seq[0]
+
+
+    
 def main():
     bird, pipes, score, last_pipe_time = reset_game()
     game_over = False
-
+    
     running = True
     while running:
         clock.tick(FPS)
         screen.fill(SKY_BLUE)
-   
-    ## Action code to be altered
+
+        # Find the nearest pipe ahead of the bird
+        next_pipe = next((p for p in pipes if p.x + PIPE_WIDTH > bird.x), None)
+
+        # if next_pipe:
+        #     move = simulate(bird.y, bird.velocity, next_pipe.height,next_pipe.x)
+        #     print("input",move)
+
+        #     if move == 1:
+
+        #         bird.jump()
+            
+        
+       
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
+            ## Action code to be altered
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     if game_over:
@@ -156,13 +235,11 @@ def main():
 
         # Draw everything
         bird.draw()
+       
 
         for pipe in pipes:
             pipe.draw()
         
-        
-        
-
         draw_ground()
         draw_text(f"Score: {score}", 20, 20)
 
@@ -174,6 +251,7 @@ def main():
 
     pygame.quit()
     sys.exit()
+
 
 
 if __name__ == "__main__":
