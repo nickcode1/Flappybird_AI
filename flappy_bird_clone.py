@@ -110,24 +110,27 @@ def reset_game():
     return Bird(), [], 0, pygame.time.get_ticks()
 
 def seq_eval(seq, current_y, current_v, pipeheight, pipex):
-    
     y = current_y
     v = current_v
     px = pipex
-    coords = []
+    
+    bird_x = 100
+    radius = 25
+
+    # 1. ADD THIS: A separate X coordinate strictly for drawing the red line
+    draw_x = bird_x 
+    
+    # 2. Start the line EXACTLY at the bird's center
+    coords = [(bird_x, current_y)] 
 
     total_cost = 0
-    
-    # Balanced weights for smoother flight
     Qy = 100
     Qv = 10
     R  = 1000000
 
-    bird_x = 100
-    radius = 25
-
     for i in seq:
-        px -= PIPE_SPEED   
+        px -= PIPE_SPEED        # The pipe moves LEFT (for collision math)
+        draw_x += PIPE_SPEED    # The visual path moves RIGHT (for the red line)
 
         # update physics
         if i == 1:
@@ -137,28 +140,25 @@ def seq_eval(seq, current_y, current_v, pipeheight, pipex):
         
         y += v
         
-        coords.append((px,y))
+        # 3. Append the DRAWING coordinate, not the pipe coordinate
+        coords.append((draw_x, y))
 
-       
         # position error (distance from center of gap)
         error = y - (pipeheight + PIPE_GAP / 2)
 
         # stage cost
         total_cost += (Qy * error**2 + Qv * v**2 + R * i)
 
-        # 1. FIXED HITBOX COLLISION
-        # Check if the pipe overlaps the bird's horizontal area (80 to 120)
+        # FIXED HITBOX COLLISION
         if px < (bird_x + radius) and (px + PIPE_WIDTH) > (bird_x - radius):
-            # Check if the bird hits the top pipe or bottom pipe
             if (y - radius) < pipeheight or (y + radius) > (pipeheight + PIPE_GAP):
                 total_cost = float('inf') 
 
-        # 2. FIXED BOUNDARY COLLISION (Floor and Ceiling)
+        # FIXED BOUNDARY COLLISION (Floor and Ceiling)
         if (y + radius) >= (HEIGHT - GROUND_HEIGHT) or (y - radius) <= 0:
             total_cost = float('inf')
-        
 
-    return total_cost,coords
+    return total_cost, coords
 
 
 def simulate(birdy,birdvelo,pipeheight,pipex):
