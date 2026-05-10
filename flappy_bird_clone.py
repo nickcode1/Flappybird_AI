@@ -28,6 +28,7 @@ BLACK = (0, 0, 0)
 #SIM Specs
 N = 10 
 
+
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Flappy Bird Clone")
@@ -112,7 +113,8 @@ def seq_eval(seq, current_y, current_v, pipeheight, pipex):
     
     y = current_y
     v = current_v
-    px = pipex  
+    px = pipex
+    coords = []
 
     total_cost = 0
     
@@ -134,7 +136,10 @@ def seq_eval(seq, current_y, current_v, pipeheight, pipex):
             v += GRAVITY
         
         y += v
+        
+        coords.append((px,y))
 
+       
         # position error (distance from center of gap)
         error = y - (pipeheight + PIPE_GAP / 2)
 
@@ -153,7 +158,7 @@ def seq_eval(seq, current_y, current_v, pipeheight, pipex):
             total_cost = float('inf')
         
 
-    return total_cost
+    return total_cost,coords
 
 
 def simulate(birdy,birdvelo,pipeheight,pipex):
@@ -166,22 +171,23 @@ def simulate(birdy,birdvelo,pipeheight,pipex):
   
   for seq in seqs:
     cost = seq_eval(seq,birdy,birdvelo,pipeheight,pipex)
-        
-    if cost < optimalcost:
 
-        optimalcost = cost
+        
+    if cost[0] < optimalcost:
+        optimalcost = cost[0]
         optimal_seq = seq
+        optimal_coords = cost[1]
     # else:
     #     optimal_seq = [0]*N
     
-  return optimal_seq[0]
+  return optimal_seq[0],optimal_coords
 
 
     
 def main():
     bird, pipes, score, last_pipe_time = reset_game()
     game_over = False
-    
+    coords = []
     running = True
     while running:
         clock.tick(FPS)
@@ -192,9 +198,9 @@ def main():
 
         if next_pipe:
             move = simulate(bird.y, bird.velocity, next_pipe.height, next_pipe.x)
-            # print("input",move)
+            coords = move[1]
 
-            if move == 1:
+            if move[0] == 1:
 
                 bird.jump()
         
@@ -203,7 +209,6 @@ def main():
             bird.jump()
             
         
-       
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -245,10 +250,10 @@ def main():
                 game_over = True
 
         # Draw everything
+        
+        draw_predicted_path(coords)
         bird.draw()
-       
-        print(bird.y)
-
+    
         for pipe in pipes:
             pipe.draw()
         
@@ -265,6 +270,19 @@ def main():
     sys.exit()
 
 
+def draw_predicted_path(coords):
+    if len(coords) < 2:
+        return
+
+    # Use a distinct color (e.g., Red) so it stands out
+    LINE_COLOR = (255, 0, 0)
+    
+    # Draw dotted line (iterate by 2 to create gaps)
+    for i in range(0, len(coords) - 1, 2):
+        start_pos = (int(coords[i][0]), int(coords[i][1]))
+        end_pos = (int(coords[i+1][0]), int(coords[i+1][1]))
+        
+        pygame.draw.line(screen, LINE_COLOR, start_pos, end_pos, 3)
 
 if __name__ == "__main__":
     main()
