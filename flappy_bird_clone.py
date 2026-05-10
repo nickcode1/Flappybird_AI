@@ -26,7 +26,7 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
 #SIM Specs
-N = 10
+N = 10 
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -108,46 +108,50 @@ def draw_text(text, x, y):
 def reset_game():
     return Bird(), [], 0, pygame.time.get_ticks()
 
-def seq_eval(seq,current_y,current_v,pipeheight,pipex):
+def seq_eval(seq, current_y, current_v, pipeheight, pipex):
     
     y = current_y
     v = current_v
     px = pipex  
 
     total_cost = 0
+    
+    # Balanced weights for smoother flight
     Qy = 100
     Qv = 10
+    R  = 1000000
 
-    R  = 10000000
+    bird_x = 100
+    radius = 25
 
     for i in seq:
-
-        px -= PIPE_SPEED   # <-- advance pipe position each step
+        px -= PIPE_SPEED   
 
         # update physics
         if i == 1:
             v = JUMP_STRENGTH + GRAVITY
         else:
             v += GRAVITY
-
+        
         y += v
 
-        # position error
-        error = y - (pipeheight + PIPE_GAP/2)
+        # position error (distance from center of gap)
+        error = y - (pipeheight + PIPE_GAP / 2)
 
         # stage cost
-        total_cost += (
-            Qy * error**2 +
-            Qv * v**2 +
-            R * i**2
-        )
+        total_cost += (Qy * error**2 + Qv * v**2 + R * i)
 
-        # collision penalty
-        if px < 100 and (px+PIPE_WIDTH) >100:
-            
-            if y < pipeheight or y >  (pipeheight + PIPE_GAP):
-                total_cost += 1e100000000
-                break
+        # 1. FIXED HITBOX COLLISION
+        # Check if the pipe overlaps the bird's horizontal area (80 to 120)
+        if px < (bird_x + radius) and (px + PIPE_WIDTH) > (bird_x - radius):
+            # Check if the bird hits the top pipe or bottom pipe
+            if (y - radius) < pipeheight or (y + radius) > (pipeheight + PIPE_GAP):
+                total_cost = float('inf') 
+
+        # 2. FIXED BOUNDARY COLLISION (Floor and Ceiling)
+        if (y + radius) >= (HEIGHT - GROUND_HEIGHT) or (y - radius) <= 0:
+            total_cost = float('inf')
+        
 
     return total_cost
 
@@ -157,7 +161,8 @@ def simulate(birdy,birdvelo,pipeheight,pipex):
   ypos = birdy
   velo = birdvelo
   seqs = list(product([0,1], repeat=N))
-  optimalcost = 100000000000000000000000000
+  optimalcost = float("inf")
+  optimal_seq = []
   
   for seq in seqs:
     cost = seq_eval(seq,birdy,birdvelo,pipeheight,pipex)
@@ -166,6 +171,8 @@ def simulate(birdy,birdvelo,pipeheight,pipex):
 
         optimalcost = cost
         optimal_seq = seq
+    # else:
+    #     optimal_seq = [0]*N
     
   return optimal_seq[0]
 
@@ -180,16 +187,20 @@ def main():
         clock.tick(FPS)
         screen.fill(SKY_BLUE)
 
-        # Find the nearest pipe ahead of the bird
-        next_pipe = next((p for p in pipes if p.x + PIPE_WIDTH > bird.x), None)
+      #  Find the nearest pipe ahead of the bird
+        next_pipe = next((p for p in pipes if p.x + PIPE_WIDTH > bird.x - bird.radius), None)
 
-        # if next_pipe:
-        #     move = simulate(bird.y, bird.velocity, next_pipe.height,next_pipe.x)
-        #     print("input",move)
+        if next_pipe:
+            move = simulate(bird.y, bird.velocity, next_pipe.height, next_pipe.x)
+            # print("input",move)
 
-        #     if move == 1:
+            if move == 1:
 
-        #         bird.jump()
+                bird.jump()
+        
+        elif bird.y > 300:
+            
+            bird.jump()
             
         
        
@@ -236,6 +247,7 @@ def main():
         # Draw everything
         bird.draw()
        
+        print(bird.y)
 
         for pipe in pipes:
             pipe.draw()
