@@ -26,7 +26,7 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
 #SIM Specs
-N = 10 
+N = 80
 
 
 pygame.init()
@@ -165,22 +165,60 @@ def simulate(birdy,birdvelo,pipeheight,pipex):
 
   ypos = birdy
   velo = birdvelo
-  seqs = list(product([0,1], repeat=N))
+  # seqs = list(product([0,1], repeat=N)) # REPLACE WITH NEW SMART SEQUENCE GENERATOR FOR BEAM SEARCH
+
+  
   optimalcost = float("inf")
   optimal_seq = []
+  seq_costs = []
   
-  for seq in seqs:
-    cost = seq_eval(seq,birdy,birdvelo,pipeheight,pipex)
+  seqs = [[0], [1]]
+  while len(seqs) <= 8:
 
-        
-    if cost[0] < optimalcost:
-        optimalcost = cost[0]
-        optimal_seq = seq
-        optimal_coords = cost[1]
-    # else:
-    #     optimal_seq = [0]*N
+    new_seqs = []
+    seq_costs = []
+
+    for i in seqs:
+        new_seqs.append(i + [0])
+        new_seqs.append(i + [1])
     
-  return optimal_seq[0],optimal_coords
+    seqs = new_seqs
+
+    for seq in seqs:
+        cost = seq_eval(seq,birdy,birdvelo,pipeheight,pipex)
+        seq_costs.append((seq,cost[0],cost[1]))
+        
+
+    seq_costs.sort(key=lambda tup: tup[1])
+        
+    if len(seqs[0])>=N:
+        optimal_seq = seq_costs[0][0]
+        optimalcost = seq_costs[0][1]
+        optimal_coords = seq_costs[0][2]
+        break
+
+    if len(seqs) == 4:
+        seq_costs= seq_costs[:-1]
+    elif len (seqs) ==6:
+        seq_costs= seq_costs[:-2]
+    elif len (seqs) ==8:
+        seq_costs= seq_costs[:-4]
+
+    seqs = []
+
+    for i in seq_costs:
+        seqs.append(i[0])
+
+ 
+        
+    # if cost[0] < optimalcost:
+    #     optimalcost = cost[0]
+    #     optimal_seq = seq
+    #     optimal_coords = cost[1]
+    # # else:
+    # #     optimal_seq = [0]*N
+    
+  return optimal_seq ,optimal_coords
 
 
     
@@ -200,7 +238,7 @@ def main():
             move = simulate(bird.y, bird.velocity, next_pipe.height, next_pipe.x)
             coords = move[1]
 
-            if move[0] == 1:
+            if move[0][0] == 1:
 
                 bird.jump()
         
