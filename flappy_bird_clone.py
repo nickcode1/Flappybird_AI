@@ -26,7 +26,7 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
 #SIM Specs
-N = 80
+N = 100
 
 
 pygame.init()
